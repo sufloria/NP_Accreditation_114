@@ -2,51 +2,48 @@ import streamlit as st
 import json
 import os
 
-# 網頁配置：設定標題與寬螢幕佈局
-st.set_page_config(page_title="114年專師認定自檢系統-終極完整版", layout="wide")
+# 1. 網頁配置
+st.set_page_config(page_title="114年專師認定自檢-旗艦版", layout="wide")
 
-# 1. 核心資料庫：完整 23 項條文、佐證細項、訪談模擬題與詳細指引
+# 建立檔案儲存目錄
+UPLOAD_DIR = "uploaded_evidence"
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+
+# 2. 核心資料庫：完整 23 項條文 (含 16 項必評) 
 def get_full_criteria():
     return [
         # --- 第一章：教學資源與組織管理 ---
-        {"id": "1.1.1", "is_mandatory": True, "chapter": "第一章", "title": "專責培育與管理單位", "c_level": "副院長級召集人，醫護共同組成，每3個月開會1次。", "check": ["組織架構圖(含副院長、專師代表)", "會議紀錄(近一年4份)", "勞動權益維護措施紀錄"], "q": "專責單位多久開一次會？召集人級別為何？"},
-        {"id": "1.1.2", "is_mandatory": True, "chapter": "第一章", "title": "執業內容訂定與公告", "c_level": "訂定分科執業範圍，公告周知並落實。", "check": ["各分科執業規範", "工作契約書(或授權文件)", "醫院公告周知證明"], "q": "如何確保專師執行業務不超出最新辦法之附表範圍？"},
-        {"id": "1.1.3", "is_mandatory": True, "chapter": "第一章", "title": "預立醫療流程(PMP) SOP", "c_level": "醫師須於24小時內完成核對及簽署。", "check": ["預立醫療流程 SOP", "24小時內醫師核簽紀錄", "委員會名單"], "q": "執行 PMP 後，監督醫師是否確實於 24 小時內補簽名？"},
-        {"id": "1.1.4", "is_mandatory": False, "chapter": "第一章", "title": "病歷書寫審查機制", "c_level": "主治醫師對專師病歷記載給予指導。", "check": ["病歷書寫審查機制規範", "醫師指導痕跡或審查紀錄"], "q": "主治醫師如何對你的病歷記載給予具體指導？"},
-        {"id": "1.1.5", "is_mandatory": False, "chapter": "第一章", "title": "臨床執業品質監測", "c_level": "訂有監測規範及機制並提供佐證。", "check": ["品質監測辦法", "監測指標與佐證"], "q": "醫院如何監測專師的執業品質？"},
-        {"id": "1.1.6", "is_mandatory": False, "chapter": "第一章", "title": "專科護理師考核機制", "c_level": "醫護部門共同負責考核。", "check": ["專科護理師考核規範", "醫護共同考核紀錄"], "q": "考評是否落實由護理與醫療部主管共同進行？"},
-        {"id": "1.2.1", "is_mandatory": True, "chapter": "第一章", "title": "妥適的訓練場所", "c_level": "提供兼顧隱私、安全之場所。", "check": ["臨床訓練場所空間", "工作安全健康照護策略"], "q": "實地觀察場所是否兼顧病人安全與隱私？"},
-        {"id": "1.2.2", "is_mandatory": True, "chapter": "第一章", "title": "必須之訓練設備", "c_level": "提供網路平台與文獻檢索等設備。", "check": ["訓練設備環境", "網路學習平台"], "q": "臨床單位是否能隨時使用學習平台與文獻庫？"},
-        {"id": "1.2.3", "is_mandatory": False, "chapter": "第一章", "title": "圖書與期刊管理", "c_level": "提供近5年內圖書及期刊。", "check": ["資源清單", "新購入公告紀錄"], "q": "是否了解新購圖書期刊之公告管道？"},
+        {"id": "1.1.1", "is_mandatory": True, "chapter": "第一章", "title": "設有管理專責單位並討論執業與權益", "c_level": "副院長級召集人，醫護共同組成，每3個月開會1次。", "check": ["組織架構及成員名單", "近一年4份會議紀錄", "勞動權益維護措施紀錄"], "q": "委員問：專責單位多久開一次會？召集人級別為何？"},
+        {"id": "1.1.2", "is_mandatory": True, "chapter": "第一章", "title": "訂定明確之執業內容並公告", "c_level": "訂定分科執業範圍，且不超出法規附表範圍。", "check": ["各分科執業規範", "工作契約書(或授權文件)", "醫院公告周知證明"], "q": "如何確保業務項目不超出衛福部最新辦法之附表範圍？"},
+        {"id": "1.1.3", "is_mandatory": True, "chapter": "第一章", "title": "訂有預立醫療流程(PMP) SOP", "c_level": "副院長召集委員會，醫師須於24小時內完成核簽。", "check": ["預立醫療流程 SOP", "24小時內醫師核簽紀錄", "委員會名單"], "q": "執行 PMP 後，監督醫師是否確實於 24 小時內補簽名？"},
+        {"id": "1.1.4", "is_mandatory": False, "chapter": "第一章", "title": "建立病歷書寫審查機制", "c_level": "主治醫師對專師病歷記載給予指導。", "check": ["病歷書寫審查機制規範", "醫師指導痕跡或審查紀錄"], "q": "主治醫師如何對你的病歷記載給予具體指導？"},
+        {"id": "1.1.5", "is_mandatory": False, "chapter": "第一章", "title": "明確之臨床執業品質監測機制", "c_level": "訂有監測規範、辦法及機制並提供佐證。", "check": ["品質監測辦法", "監測指標與佐證資料"], "q": "醫院目前如何監測專師的執業品質？"},
+        {"id": "1.1.6", "is_mandatory": False, "chapter": "第一章", "title": "建立專師考核機制", "c_level": "考核機制由醫護部門共同負責。", "check": ["專科護理師考核規範", "醫護共同考核執行紀錄"], "q": "考評是否確實由醫療與護理主管共同執行？"},
+        {"id": "1.2.1", "is_mandatory": True, "chapter": "第一章", "title": "妥適的訓練場所", "c_level": "提供兼顧隱私、安全與學習便利性之場所。", "check": ["臨床訓練場所空間", "工作安全健康照護策略"], "q": "實地觀察場所是否兼顧病人安全與隱私？"},
+        {"id": "1.2.2", "is_mandatory": True, "chapter": "第一章", "title": "提供訓練必須之設備", "c_level": "提供網路平台、文獻檢索等硬體與平台。", "check": ["訓練相關設備與環境", "網路學習平台與文獻庫"], "q": "臨床單位是否能隨時使用學習平台與檢索系統？"},
+        {"id": "1.2.3", "is_mandatory": False, "chapter": "第一章", "title": "提供適當之圖書、期刊並管理", "c_level": "提供近5年內圖書及期刊(含實證、醫倫)。", "check": ["資源清單(含電子版)", "新購入公告紀錄"], "q": "是否了解新購圖書期刊之公告管道？"},
 
         # --- 第二章：教學師資、培育與繼續教育 ---
-        {"id": "2.1.1", "is_mandatory": True, "chapter": "第二章", "title": "臨床師資-醫師資格", "c_level": "專科醫師實際從事專科工作至少2年。", "check": ["醫師證書影本", "年資服務證明"], "q": "參與培訓之指導醫師資歷是否符合規範？"},
-        {"id": "2.1.2", "is_mandatory": True, "chapter": "第二章", "title": "臨床師資-專師資格", "c_level": "具專師資格且從事專科工作至少2年。", "check": ["專師證書影本", "專師服務證明"], "q": "擔任教師之專師是否皆具備 2 年以上資歷？"},
-        {"id": "2.1.3", "is_mandatory": True, "chapter": "第二章", "title": "配置比與品質", "c_level": "醫師:專師:學員比例須符合 1:4:4。", "check": ["師生配置比例統計表", "師資評值紀錄"], "q": "目前各單位之師生比是否符合 1:4:4？"},
-        {"id": "2.2.1", "is_mandatory": True, "chapter": "第二章", "title": "師資培育制度", "c_level": "明訂培育制度、計畫與進修活動。", "check": ["師資發展計畫書", "教師參與進修紀錄"], "q": "醫院如何培育師資的教學能力？"},
-        {"id": "2.2.2", "is_mandatory": False, "chapter": "第二章", "title": "師資教學能力提升", "c_level": "教師課程至少4小時，參與率100%。", "check": ["教師參與教學課程紀錄", "成效評估紀錄"], "q": "指導教師今年是否皆完成 4 小時訓練？"},
-        {"id": "2.2.3", "is_mandatory": True, "chapter": "第二章", "title": "專師繼續教育制度", "c_level": "每年至少辦理20小時教育課程。", "check": ["繼續教育訓練計畫", "進階制度執行紀錄"], "q": "課程安排是否足以維持專師證照效期？"},
+        {"id": "2.1.1", "is_mandatory": True, "chapter": "第二章", "title": "醫師師資應具適當資格", "c_level": "具專科醫師資格，實際從事專科工作至少2年。", "check": ["醫師證照影本", "年資服務證明"], "q": "參與培訓之指導醫師資歷是否滿 2 年？"},
+        {"id": "2.1.2", "is_mandatory": True, "chapter": "第二章", "title": "專師師資應具適當資格", "c_level": "具專師資格，實際從事專師工作至少2年。", "check": ["專師證照影本", "臨床服務年資證明"], "q": "擔任教師之專師是否均滿 2 年工作資歷？"},
+        {"id": "2.1.3", "is_mandatory": True, "chapter": "第二章", "title": "配置比與教學成效評值", "c_level": "醫師:專師:學員比例須符合 1:4:4。", "check": ["臨床配置統計表", "師資教學成效評值紀錄"], "q": "目前各單位之師生比是否符合 1:4:4 規範？"},
+        {"id": "2.2.1", "is_mandatory": True, "chapter": "第二章", "title": "具體師資培育制度並落實", "c_level": "明訂培訓制度與師資發展計畫。", "check": ["師資發展計畫書", "教師參與進修紀錄"], "q": "醫院如何執行教師教學能力的培育？"},
+        {"id": "2.2.2", "is_mandatory": False, "chapter": "第二章", "title": "專師師資教學能力提升", "c_level": "臨床教師參與課程至少4小時，參與率100%。", "check": ["教師參與教學課程紀錄", "課後成效評估與檢討"], "q": "指導教師今年是否皆完成 4 小時以上訓練？"},
+        {"id": "2.2.3", "is_mandatory": True, "chapter": "第二章", "title": "專師繼續教育訓練制度", "c_level": "規劃每年至少辦理20小時教育課程。", "check": ["年度繼續教育計畫", "能力進階制度執行紀錄"], "q": "課程安排是否足以維持專師證照效期？"},
 
         # --- 第三章：教學訓練計畫與執行成果 ---
-        {"id": "3.1.1", "is_mandatory": True, "chapter": "第三章", "title": "訓練計畫內容具體", "c_level": "含目的、目標、課程、品質維護及評值。", 
-         "check": ["2023-2026 培訓計畫書", "各年度分科課程架構", "年度計畫檢討會議紀錄"], "q": "請簡單說明訓練計畫如何確保教學品質？"},
-        {"id": "3.1.2", "is_mandatory": True, "chapter": "第三章", "title": "教學課程內容安排", "c_level": "合理兼顧學習與工作需要，具補訓機制。", 
-         "check": ["各年度課程表(2022-2026)", "開訓說明會簡報或簽到", "補考/補報註記紀錄"], "q": "學員的工作量是否會影響上課進度？"},
-        {"id": "3.2.1", "is_mandatory": True, "chapter": "第三章", "title": "訓練課程符合規定", "c_level": "符合專科護理師分科及甄審辦法。", 
-         "check": ["訓練計畫書法規項對照", "課程教材、簽到紀錄", "課室成果評值紀錄"], "q": "如何核對目前的課程符合中央法規要求？"},
-        {"id": "3.2.2", "is_mandatory": True, "chapter": "第三章", "title": "臨床實務訓練落實", "c_level": "反映學習目標，具檢討改善機制。", 
-         "check": ["臨床訓練規劃與評值表", "臨床案例成果摘要", "雙向回饋會議紀錄"], "q": "老師如何在臨床上確認學員的學習成效？"},
-        {"id": "3.3.1", "is_mandatory": True, "chapter": "第三章", "title": "回饋與反映管道", "c_level": "教師即時回饋並紀錄，設有反映管道。", 
-         "check": ["個別學員輔導紀錄(王宥勳)", "雙向回饋會議紀錄"], "q": "學員遇到不合理待遇時有哪些反映窗口？"},
-        {"id": "3.3.2", "is_mandatory": False, "chapter": "第三章", "title": "教師多元化評估", "c_level": "訂有教師評估機制並落實回饋。", 
-         "check": ["教師教學成效評估機制", "課程成果評值彙整資料", "教師教學調整紀錄"], "q": "學員如何評估老師？結果是否給予老師建議？"},
-        {"id": "3.3.3", "is_mandatory": False, "chapter": "第三章", "title": "訓練成果分析改善", "c_level": "分析成果並訂有輔導改善措施。", 
-         "check": ["訓練成果分析報告", "成效不佳者輔導紀錄"], "q": "若學員院內測試不過，有什麼補強措施？"},
-        {"id": "3.3.4", "is_mandatory": True, "chapter": "第三章", "title": "訓練計畫成效評估", "c_level": "訂有評值計畫且每年檢討(含考照率)。", 
-         "check": ["計畫評值分析報告", "考照通過率趨勢分析", "改善措施追蹤表"], "q": "去年考業率如何？如何依此修訂教學計畫？"}
+        {"id": "3.1.1", "is_mandatory": True, "chapter": "第三章", "title": "教學訓練計畫具體可行", "c_level": "含目的、課程、品質維護、監測及評值。", "check": ["2023-2026 培訓計畫書", "各分科培訓課程架構", "計畫檢討會議紀錄"], "q": "請說明訓練計畫如何確保教學品質？"},
+        {"id": "3.1.2", "is_mandatory": True, "chapter": "第三章", "title": "適當安排教學課程與活動", "c_level": "依能力安排課程，合理兼顧學習與工作。", "check": ["教學活動時程表", "開訓說明會簡報或簽到", "補訓補救機制紀錄"], "q": "如何確保訓練時數不被臨床工作排擠？"},
+        {"id": "3.2.1", "is_mandatory": True, "chapter": "第三章", "title": "訓練課程符合法規規定", "c_level": "內容須符合專科護理師分科及甄審辦法。", "check": ["教學計畫書法規比對", "教材、簽到與成果評值"], "q": "如何核對目前的課程符合中央法規要求？"},
+        {"id": "3.2.2", "is_mandatory": True, "chapter": "第三章", "title": "臨床實務訓練落實執行", "c_level": "反映學習目標，具檢討改善機制。", "check": ["實務訓練產生之成果", "檢討及改善之證據"], "q": "老師如何在臨床上確認學員的學習成效？"},
+        {"id": "3.3.1", "is_mandatory": True, "chapter": "第三章", "title": "有回饋機制與反映管道", "c_level": "教師即時回饋並記錄，保障學員權益。", "check": ["師生輔導紀錄", "學員反映問題溝通證明"], "q": "學員遇到不合理待遇時有哪些反映窗口？"},
+        {"id": "3.3.2", "is_mandatory": False, "chapter": "第三章", "title": "對於教師多元化評估機制", "c_level": "訂有教學成效評估機制並實際執行。", "check": ["評估教師之機制文件", "回饋與輔導改善紀錄"], "q": "學員如何評估老師？結果是否給予老師建議？"},
+        {"id": "3.3.3", "is_mandatory": False, "chapter": "第三章", "title": "學員訓練成果分析與改善", "c_level": "多元管道評估結果並分析、輔導學員。", "check": ["訓練成果分析報告", "成果不佳者輔導紀錄"], "q": "若學員院內測試不過，有什麼補強輔導措施？"},
+        {"id": "3.3.4", "is_mandatory": True, "chapter": "第三章", "title": "訓練計畫成效評估", "c_level": "訂有評值計畫且每年檢討(含考照率)。", "check": ["計畫評值分析報告", "年度考照通過率統計", "改善措施追蹤表"], "q": "去年考照率如何？如何依此修訂教學計畫？"}
     ]
 
-# 進度存取邏輯
+# 3. 檔案存取邏輯
 SAVE_FILE = 'progress.json'
 def load_progress():
     if os.path.exists(SAVE_FILE):
@@ -58,96 +55,108 @@ def load_progress():
 def save_progress(progress):
     with open(SAVE_FILE, 'w', encoding='utf-8') as f: json.dump(progress, f, ensure_ascii=False)
 
-# --- 介面呈現 ---
-st.title("🏥 114年度專科護理師訓練醫院認定-終極自檢系統")
-st.markdown("本系統由學術組長開發，整合 23 項認定條文、佐證清單、訪談題及自評表執行內容。")
+# --- UI 介面 ---
+st.title("🛡️ 114年度專科護理師訓練醫院認定-終極實戰系統")
+st.markdown("本系統已補齊 **23 項條文**，並啟用**標準化自動命名上傳**與**多重連結功能**。")
 
-all_data = get_full_criteria()
+data = get_full_criteria()
 saved_progress = load_progress()
 user_data = {}
 
-# 側邊欄：判定結果
-st.sidebar.header("📊 認定判定結果")
-
-tab_chk, tab_time = st.tabs(["📋 完整條文與佐證核對", "⏱️ 訪視當日時程表"])
+tab_chk, tab_files = st.tabs(["📋 條文自檢與上傳", "📂 檔案庫管理"])
 
 with tab_chk:
-    for chap_name in ["第一章", "第二章", "第三章"]:
-        st.subheader(f"📍 {chap_name}")
-        chap_data = [d for d in all_data if d['chapter'] == chap_name]
-        for item in chap_data:
+    for chap in ["第一章", "第二章", "第三章"]:
+        st.subheader(f"📍 {chap}")
+        for item in [d for d in data if d['chapter'] == chap]:
             badge = " (必)" if item['is_mandatory'] else ""
             with st.expander(f"{item['id']} {item['title']}{badge}"):
                 st.write(f"**【C等級標準】**：{item['c_level']}")
                 st.warning(f"🎤 {item['q']}")
                 
-                old_item_data = saved_progress.get(item['id'], {})
+                old_data = saved_progress.get(item['id'], {"score": "D", "res": "未指派", "checks": [], "links": {}})
                 
-                # 負責人選擇 (選單 + 手動輸入)
+                # 選項 A：負責人指派
                 roles = ["未指派", "行政組", "教學組", "臨床組", "學術組長", "其他"]
-                saved_res = old_item_data.get("res", "未指派")
-                def_idx = roles.index(saved_res) if saved_res in roles else 5
-                
-                c1, c2 = st.columns([1, 1])
-                with c1:
-                    sel_role = st.selectbox(f"👤 負責人 ({item['id']})", roles, index=def_idx, key=f"sel_{item['id']}")
-                    final_res = sel_role
-                    if sel_role == "其他" or (saved_res and saved_res not in roles):
-                        final_res = st.text_input("✍️ 填寫姓名", value=saved_res if saved_res not in roles else "", key=f"res_{item['id']}")
-                
-                # 佐證細項與多連結功能
-                st.write("**📑 詳細佐證核對 (多連結請用英文逗號 , 分隔)：**")
-                chk_results = []
-                chk_links = old_item_data.get("links", {})
-                for i, chk_text in enumerate(item['check']):
-                    col_chk, col_link = st.columns([4, 6])
-                    with col_chk:
-                        is_checked = st.checkbox(chk_text, key=f"chk_{item['id']}_{i}", value=old_item_data.get("checks", [False]*15)[i] if i < len(old_item_data.get("checks", [])) else False)
-                        chk_results.append(is_checked)
-                    with col_link:
-                        raw_links = st.text_input("URL", value=chk_links.get(str(i), ""), key=f"lnk_{item['id']}_{i}", label_visibility="collapsed", placeholder="貼上佐證連結")
-                        chk_links[str(i)] = raw_links
-                        if raw_links:
-                            link_list = [l.strip() for l in raw_links.split(",") if l.strip()]
-                            btn_cols = st.columns(len(link_list))
-                            for idx, link in enumerate(link_list):
-                                with btn_cols[idx]:
-                                    st.link_button(f"📂 檔案{idx+1}", link, use_container_width=True)
-                
-                # 評分等級
-                st.divider()
-                saved_score = old_item_data.get("score", "D")
-                score_idx = ["A", "B", "C", "D"].index(saved_score)
-                current_score = st.radio("自評等級", ["A", "B", "C", "D"], index=score_idx, key=f"r_{item['id']}", horizontal=True)
-                user_data[item['id']] = {"res": final_res, "score": current_score, "checks": chk_results, "links": chk_links}
+                def_idx = roles.index(old_data['res']) if old_data['res'] in roles else 0
+                selected_role = st.selectbox(f"👤 負責人 ({item['id']})", roles, index=def_idx, key=f"sel_{item['id']}")
+                final_res = selected_role if selected_role != "其他" else st.text_input("✍️ 姓名", key=f"res_{item['id']}", value=old_data['res'] if old_data['res'] not in roles else "")
 
-    if st.button("💾 儲存所有進度"):
+                # 選項 B：佐證清單勾選 (修復區)
+                st.write("**📑 佐證細項核對：**")
+                current_checks = []
+                for i, check_item in enumerate(item['check']):
+                    old_checked = old_data.get("checks", [])[i] if i < len(old_data.get("checks", [])) else False
+                    is_checked = st.checkbox(check_item, value=old_checked, key=f"chk_{item['id']}_{i}")
+                    current_checks.append(is_checked)
+
+                # 選項 C：檔案自動化命名上傳
+                st.write("**📤 直接上傳 (系統將自動重命名為標準格式)：**")
+                files = st.file_uploader(f"選擇檔案", accept_multiple_files=True, key=f"up_{item['id']}")
+                if files:
+                    for f in files:
+                        ext = os.path.splitext(f.name)[1]
+                        # 標準化命名：1.1.3_預立醫療流程_2026備評用.pdf
+                        base_name = f"{item['id']}_{item['title']}_2026備評用"
+                        new_name = f"{base_name}{ext}"
+                        # 處理重複名稱
+                        idx = 1
+                        while os.path.exists(os.path.join(UPLOAD_DIR, new_name)):
+                            new_name = f"{base_name}_{idx}{ext}"
+                            idx += 1
+                        
+                        file_path = os.path.join(UPLOAD_DIR, new_name)
+                        with open(file_path, "wb") as save_f:
+                            save_f.write(f.getbuffer())
+                    st.success(f"已存入：{new_name}")
+
+                # 選項 D：多重連結管理
+                st.write("**🔗 多重 URL 連結 (用英文逗號 , 分隔)：**")
+                old_links = old_data.get("links", {})
+                raw_links = st.text_input("貼上連結", key=f"lnk_{item['id']}", value=old_links.get("all", ""), placeholder="URL1, URL2...")
+                if raw_links:
+                    l_list = [l.strip() for l in raw_links.split(",") if l.strip()]
+                    cols = st.columns(len(l_list))
+                    for l_idx, link in enumerate(l_list):
+                        with cols[l_idx]:
+                            st.link_button(f"📂 檔案{l_idx+1}", link, use_container_width=True)
+
+                # 選項 E：評分等級
+                score = st.radio("自評等級", ["A", "B", "C", "D"], index=["A", "B", "C", "D"].index(old_data['score']), key=f"r_{item['id']}", horizontal=True)
+                
+                user_data[item['id']] = {
+                    "score": score, 
+                    "res": final_res, 
+                    "checks": current_checks, 
+                    "links": {"all": raw_links}
+                }
+
+    if st.button("💾 儲存自檢進度"):
         save_progress(user_data)
-        st.toast("資料已儲存！")
+        st.toast("進度已儲存！")
 
-with tab_time:
-    st.info("🕒 訪視當天流程總計 3.5 小時：")
-    st.table([
-        {"階段": "會前會", "時間": "20 min", "說明": "訪視委員先行溝通共識"},
-        {"階段": "致詞與簡報", "時間": "20 min", "說明": "簡報 15min，須限定於專師訓練計畫"},
-        {"階段": "實地/書審/訪談", "時間": "130 min", "說明": "文件審查、臨床觀察、人員訪談"},
-        {"階段": "整理與回饋", "時間": "40 min", "說明": "共識達成與意見交流回饋"}
-    ])
+with tab_files:
+    st.subheader("📂 標準化備評檔案庫")
+    all_files = os.listdir(UPLOAD_DIR)
+    if all_files:
+        for f in sorted(all_files):
+            st.write(f"📄 {f}")
+    else:
+        st.write("目前尚無上傳檔案。")
 
-# 認定判定邏輯  [cite: 16, 17, 68-70, 97-99]
-total_items = len(all_data)
+# 4. 側邊欄認定邏輯 [cite: 17]
 passed_count = sum(1 for d in user_data.values() if d['score'] in ['A', 'B', 'C'])
-pass_rate = (passed_count / total_items) * 100
-mandatory_failed = [id for id, d in user_data.items() if any(i['id'] == id and i['is_mandatory'] for i in all_data) and d['score'] == 'D']
+total_count = len(data)
+pass_rate = (passed_count / total_count) * 100
+mandatory_failed = [id for id, d in user_data.items() if any(i['id'] == id and i['is_mandatory'] for i in data) and d['score'] == 'D']
 
 st.sidebar.metric("達成率", f"{pass_rate:.1f}%")
 if mandatory_failed:
-    st.sidebar.error(f"❌ 不合格：必要項 D ({', '.join(mandatory_failed)})")
-    st.sidebar.write("⚠️ 必要項須 100% 達 C 等級以上才能通過。 [cite: 17]")
+    st.sidebar.error(f"❌ 不合格：必要條文 D ({', '.join(mandatory_failed)})")
 elif pass_rate >= 90:
     st.sidebar.success("✅ 符合通過門檻")
 else:
-    st.sidebar.warning(f"⚠️ 達成率不足 90% (目前 {passed_count}/{total_items})。")
+    st.sidebar.warning(f"⚠️ 達成率不足 90% (目前 {passed_count}/{total_count})")
 
 st.sidebar.divider()
-st.sidebar.info("💡 通過門檻：C等級以上總數達 90%，且 16 項必要條文須全數達 C 以上。 [cite: 16, 17]")
+st.sidebar.info("💡 提醒：必要條文須 100% 達 C 以上，且總達成率需達 90% 以上 [cite: 17]。")
